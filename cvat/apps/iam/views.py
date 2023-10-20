@@ -147,6 +147,11 @@ class LoginViewEx(LoginView):
         return self.get_response()
 
 class RegisterViewEx(RegisterView):
+    def create(self, request, *args, **kwargs):
+        if settings.IAM_FORBID_REGISTRATION == 'Yes':
+            raise Http404("Account registration is disabled.")
+        return super().create(request, *args, **kwargs)
+
     def get_response_data(self, user):
         data = self.get_serializer(user).data
         data['email_verification_required'] = True

@@ -15,6 +15,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.0/ref/settings/
 """
 
+from pathlib import Path
 import fcntl
 import mimetypes
 import os
@@ -32,17 +33,17 @@ from cvat import __version__
 
 mimetypes.add_type("application/wasm", ".wasm", True)
 
-from pathlib import Path
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = str(Path(__file__).parents[2])
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.environ.get(
+    'ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 INTERNAL_IPS = ['127.0.0.1']
 
 try:
     sys.path.append(BASE_DIR)
-    from keys.secret_key import SECRET_KEY # pylint: disable=unused-import
+    from keys.secret_key import SECRET_KEY  # pylint: disable=unused-import
 except ImportError:
 
     from django.utils.crypto import get_random_string
@@ -62,41 +63,53 @@ def generate_ssh_keys():
 
     def add_ssh_keys():
         IGNORE_FILES = ('README.md',)
-        keys_to_add = [entry.name for entry in os.scandir(ssh_dir) if entry.name not in IGNORE_FILES]
+        keys_to_add = [entry.name for entry in os.scandir(
+            ssh_dir) if entry.name not in IGNORE_FILES]
         keys_to_add = ' '.join(os.path.join(ssh_dir, f) for f in keys_to_add)
-        subprocess.run(['ssh-add {}'.format(keys_to_add)], # nosec
-            shell=True,
-            stderr = subprocess.PIPE,
-            # lets set the timeout if ssh-add requires a input passphrase for key
-            # otherwise the process will be freezed
-            timeout=30,
-            )
+        subprocess.run(['ssh-add {}'.format(keys_to_add)],  # nosec
+                       shell=True,
+                       stderr=subprocess.PIPE,
+                       # lets set the timeout if ssh-add requires a input passphrase for key
+                       # otherwise the process will be freezed
+                       timeout=30,
+                       )
 
     with open(pidfile, "w") as pid:
         fcntl.flock(pid, fcntl.LOCK_EX)
         try:
             add_ssh_keys()
-            keys = subprocess.run(['ssh-add', '-l'], # nosec
-                stdout = subprocess.PIPE).stdout.decode('utf-8').split('\n')
+            keys = subprocess.run(['ssh-add', '-l'],  # nosec
+                                  stdout=subprocess.PIPE).stdout.decode('utf-8').split('\n')
             if 'has no identities' in keys[0]:
                 print('SSH keys were not found')
                 volume_keys = os.listdir(keys_dir)
                 if not ('id_rsa' in volume_keys and 'id_rsa.pub' in volume_keys):
                     print('New pair of keys are being generated')
-                    subprocess.run(['ssh-keygen -b 4096 -t rsa -f {}/id_rsa -q -N ""'.format(ssh_dir)], shell=True) # nosec
-                    shutil.copyfile('{}/id_rsa'.format(ssh_dir), '{}/id_rsa'.format(keys_dir))
-                    shutil.copymode('{}/id_rsa'.format(ssh_dir), '{}/id_rsa'.format(keys_dir))
-                    shutil.copyfile('{}/id_rsa.pub'.format(ssh_dir), '{}/id_rsa.pub'.format(keys_dir))
-                    shutil.copymode('{}/id_rsa.pub'.format(ssh_dir), '{}/id_rsa.pub'.format(keys_dir))
+                    subprocess.run(
+                        ['ssh-keygen -b 4096 -t rsa -f {}/id_rsa -q -N ""'.format(ssh_dir)], shell=True)  # nosec
+                    shutil.copyfile('{}/id_rsa'.format(ssh_dir),
+                                    '{}/id_rsa'.format(keys_dir))
+                    shutil.copymode('{}/id_rsa'.format(ssh_dir),
+                                    '{}/id_rsa'.format(keys_dir))
+                    shutil.copyfile('{}/id_rsa.pub'.format(ssh_dir),
+                                    '{}/id_rsa.pub'.format(keys_dir))
+                    shutil.copymode('{}/id_rsa.pub'.format(ssh_dir),
+                                    '{}/id_rsa.pub'.format(keys_dir))
                 else:
                     print('Copying them from keys volume')
-                    shutil.copyfile('{}/id_rsa'.format(keys_dir), '{}/id_rsa'.format(ssh_dir))
-                    shutil.copymode('{}/id_rsa'.format(keys_dir), '{}/id_rsa'.format(ssh_dir))
-                    shutil.copyfile('{}/id_rsa.pub'.format(keys_dir), '{}/id_rsa.pub'.format(ssh_dir))
-                    shutil.copymode('{}/id_rsa.pub'.format(keys_dir), '{}/id_rsa.pub'.format(ssh_dir))
-                subprocess.run(['ssh-add', '{}/id_rsa'.format(ssh_dir)]) # nosec
+                    shutil.copyfile('{}/id_rsa'.format(keys_dir),
+                                    '{}/id_rsa'.format(ssh_dir))
+                    shutil.copymode('{}/id_rsa'.format(keys_dir),
+                                    '{}/id_rsa'.format(ssh_dir))
+                    shutil.copyfile('{}/id_rsa.pub'.format(keys_dir),
+                                    '{}/id_rsa.pub'.format(ssh_dir))
+                    shutil.copymode('{}/id_rsa.pub'.format(keys_dir),
+                                    '{}/id_rsa.pub'.format(ssh_dir))
+                subprocess.run(
+                    ['ssh-add', '{}/id_rsa'.format(ssh_dir)])  # nosec
         finally:
             fcntl.flock(pid, fcntl.LOCK_UN)
+
 
 try:
     if os.getenv("SSH_AUTH_SOCK", None):
@@ -254,8 +267,9 @@ TEMPLATES = [
 ]
 
 # IAM settings
+IAM_FORBID_REGISTRATION = os.getenv('CVAT_FORBID_REGISTRATION', 'No')
 IAM_TYPE = 'BASIC'
-IAM_BASE_EXCEPTION = None # a class which will be used by IAM to report errors
+IAM_BASE_EXCEPTION = None  # a class which will be used by IAM to report errors
 IAM_DEFAULT_ROLES = ['user']
 IAM_ADMIN_ROLE = 'admin'
 # Index in the list below corresponds to the priority (0 has highest priority)
@@ -279,7 +293,7 @@ ACCOUNT_EMAIL_VERIFICATION = 'none'
 ACCOUNT_AUTHENTICATION_METHOD = 'username_email'
 
 # set UI url to redirect after a successful e-mail confirmation
-#changed from '/auth/login' to '/auth/email-confirmation' for email confirmation message
+# changed from '/auth/login' to '/auth/email-confirmation' for email confirmation message
 ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = '/auth/email-confirmation'
 ACCOUNT_EMAIL_VERIFICATION_SENT_REDIRECT_URL = '/auth/email-verification-sent'
 INCORRECT_EMAIL_CONFIRMATION_URL = '/auth/incorrect-email-confirmation'
@@ -288,6 +302,7 @@ OLD_PASSWORD_FIELD_ENABLED = True
 
 # Django-RQ
 # https://github.com/rq/django-rq
+
 
 class CVAT_QUEUES(Enum):
     IMPORT_DATA = 'import'
@@ -298,6 +313,7 @@ class CVAT_QUEUES(Enum):
     QUALITY_REPORTS = 'quality_reports'
     ANALYTICS_REPORTS = 'analytics_reports'
     CLEANING = 'cleaning'
+
 
 RQ_QUEUES = {
     CVAT_QUEUES.IMPORT_DATA.value: {
@@ -357,7 +373,7 @@ NUCLIO = {
     'DEFAULT_TIMEOUT': int(os.getenv('CVAT_NUCLIO_DEFAULT_TIMEOUT', 120)),
     'FUNCTION_NAMESPACE': os.getenv('CVAT_NUCLIO_FUNCTION_NAMESPACE', 'nuclio'),
     'INVOKE_METHOD': os.getenv('CVAT_NUCLIO_INVOKE_METHOD',
-        default='dashboard' if 'KUBERNETES_SERVICE_HOST' in os.environ else 'direct'),
+                               default='dashboard' if 'KUBERNETES_SERVICE_HOST' in os.environ else 'direct'),
 }
 
 assert NUCLIO['INVOKE_METHOD'] in {'dashboard', 'direct'}
@@ -375,7 +391,8 @@ COMPRESS_CSS_FILTERS = [
     'compressor.filters.css_default.CssAbsoluteFilter',
     'compressor.filters.cssmin.rCSSMinFilter'
 ]
-COMPRESS_JS_FILTERS = []  # No compression for js files (template literals were compressed bad)
+# No compression for js files (template literals were compressed bad)
+COMPRESS_JS_FILTERS = []
 
 # Password validation
 # https://docs.djangoproject.com/en/2.0/ref/settings/#auth-password-validators
@@ -465,7 +482,8 @@ IAM_OPA_BUNDLE_PATH = os.path.join(STATIC_ROOT, 'opa', 'bundle.tar.gz')
 os.makedirs(Path(IAM_OPA_BUNDLE_PATH).parent, exist_ok=True)
 
 # logging is known to be unreliable with RQ when using async transports
-vector_log_handler = os.getenv('VECTOR_EVENT_HANDLER', 'AsynchronousLogstashHandler')
+vector_log_handler = os.getenv(
+    'VECTOR_EVENT_HANDLER', 'AsynchronousLogstashHandler')
 
 logstash_async_constants.QUEUED_EVENTS_FLUSH_INTERVAL = 2.0
 LOGGING = {
@@ -490,7 +508,7 @@ LOGGING = {
             'level': 'DEBUG',
             'filename': os.path.join(BASE_DIR, 'logs', 'cvat_server.log'),
             'formatter': 'standard',
-            'maxBytes': 1024*1024*50, # 50 MB
+            'maxBytes': 1024*1024*50,  # 50 MB
             'backupCount': 5,
         },
         'vector': {
@@ -542,18 +560,18 @@ RESTRICTIONS = {
 
 # http://www.grantjenks.com/docs/diskcache/tutorial.html#djangocache
 CACHES = {
-   'default': {
+    'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
     },
-   'media' : {
-       'BACKEND' : 'diskcache.DjangoCache',
-       'LOCATION' : CACHE_ROOT,
-       'TIMEOUT' : None,
-       'SHARDS': 32,
-       'OPTIONS' : {
-            'size_limit' : 2 ** 40, # 1 Tb
-       }
-   }
+    'media': {
+        'BACKEND': 'diskcache.DjangoCache',
+        'LOCATION': CACHE_ROOT,
+        'TIMEOUT': None,
+        'SHARDS': 32,
+        'OPTIONS': {
+            'size_limit': 2 ** 40,  # 1 Tb
+        }
+    }
 }
 
 USE_CACHE = True
@@ -572,7 +590,7 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
     'x-organization',
 ]
 
-TUS_MAX_FILE_SIZE = 26843545600 # 25gb
+TUS_MAX_FILE_SIZE = 26843545600  # 25gb
 TUS_DEFAULT_CHUNK_SIZE = 104857600  # 100 mb
 
 # This setting makes request secure if X-Forwarded-Proto: 'https' header is specified by our proxy
@@ -664,7 +682,8 @@ ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = True
 ACCOUNT_ADAPTER = 'cvat.apps.iam.adapters.DefaultAccountAdapterEx'
 
 CVAT_HOST = os.getenv('CVAT_HOST', 'localhost')
-CVAT_BASE_URL = os.getenv('CVAT_BASE_URL', f'http://{CVAT_HOST}:8080').rstrip('/')
+CVAT_BASE_URL = os.getenv(
+    'CVAT_BASE_URL', f'http://{CVAT_HOST}:8080').rstrip('/')
 
 CLICKHOUSE = {
     'events': {
@@ -689,14 +708,15 @@ DATABASES = {
     }
 }
 
-BUCKET_CONTENT_MAX_PAGE_SIZE =  500
+BUCKET_CONTENT_MAX_PAGE_SIZE = 500
 
 IMPORT_CACHE_FAILED_TTL = timedelta(days=90)
 IMPORT_CACHE_SUCCESS_TTL = timedelta(hours=1)
 IMPORT_CACHE_CLEAN_DELAY = timedelta(hours=2)
 
 ASSET_MAX_SIZE_MB = 10
-ASSET_SUPPORTED_TYPES = ('image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf', )
+ASSET_SUPPORTED_TYPES = ('image/jpeg', 'image/png',
+                         'image/webp', 'image/gif', 'application/pdf', )
 ASSET_MAX_IMAGE_SIZE = 1920
 ASSET_MAX_COUNT_PER_GUIDE = 30
 

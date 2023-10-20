@@ -37,6 +37,7 @@ services:
       CVAT_REDIS_HOST: 'cvat_redis'
       CVAT_POSTGRES_HOST: 'cvat_db'
       ADAPTIVE_AUTO_ANNOTATION: 'false'
+      CVAT_FORBID_REGISTRATION: '${CVAT_FORBID_REGISTRATION}'
       IAM_OPA_BUNDLE: '1'
       no_proxy: clickhouse,grafana,vector,nuclio,opa,${no_proxy:-}
       NUMPROCS: 2
@@ -50,8 +51,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.services.cvat.loadbalancer.server.port=8080
-      - traefik.http.routers.cvat.rule=Host(`${CVAT_HOST:-localhost}`) &&
-        PathPrefix(`/api/`, `/git/`, `/opencv/`, `/static/`, `/admin`, `/documentation/`, `/django-rq`)
+      - traefik.http.routers.cvat.rule=Host(`${CVAT_HOST:-localhost}`) && PathPrefix(`/api/`, `/git/`, `/opencv/`, `/static/`, `/admin`, `/documentation/`, `/django-rq`)
       - traefik.http.routers.cvat.entrypoints=web
     volumes:
       - cvat_data:/home/django/data
@@ -231,6 +231,8 @@ services:
     restart: always
     depends_on:
       - cvat_server
+    environment:
+      CVAT_FORBID_REGISTRATION: '${CVAT_FORBID_REGISTRATION}'
     labels:
       - traefik.enable=true
       - traefik.http.services.cvat-ui.loadbalancer.server.port=80
@@ -380,6 +382,7 @@ volumes:
   cvat_keys:
   cvat_logs:
   cvat_events_db:
+
 
 networks:
   cvat:

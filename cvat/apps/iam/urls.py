@@ -24,8 +24,12 @@ urlpatterns = [
 ]
 
 if settings.IAM_TYPE == 'BASIC':
+    if not settings.IAM_FORBID_REGISTRATION:
+        urlpatterns += [
+            # registration
+            path('register', RegisterViewEx.as_view(), name='rest_register'),
+        ]
     urlpatterns += [
-        path('register', RegisterViewEx.as_view(), name='rest_register'),
         # password
         path('password/reset', PasswordResetView.as_view(),
             name='rest_password_reset'),

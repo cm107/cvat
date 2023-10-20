@@ -55,6 +55,30 @@ function LoginFormComponent(props: Props): JSX.Element {
         </Col>
     );
 
+    // console.log("process.env: " + process.env);
+    // console.log("process.env.CVAT_FORBID_REGISTRATION: " + process.env.CVAT_FORBID_REGISTRATION);
+    const isClosedRegistration = process.env.CVAT_FORBID_REGISTRATION !== undefined && process.env.CVAT_FORBID_REGISTRATION === 'Yes';
+    // console.log("isClosedRegistration: " + isClosedRegistration);
+    const registrationLink = (
+        <Row>
+            <Col className='cvat-credentials-link'>
+                {
+                    !isClosedRegistration ? (
+                        <Text strong>
+                            New user?&nbsp;
+                            <Link to='/auth/register'>Create an account</Link>
+                        </Text>
+                    ) :
+                        (
+                            <Text strong>
+                                Registration is closed
+                            </Text>
+                        )
+                }
+            </Col>
+        </Row>
+    );
+
     return (
         <div className='cvat-login-form-wrapper'>
             <Row justify='space-between' className='cvat-credentials-navigation'>
@@ -72,16 +96,7 @@ function LoginFormComponent(props: Props): JSX.Element {
                     )
                 }
                 {
-                    !credential && (
-                        <Row>
-                            <Col className='cvat-credentials-link'>
-                                <Text strong>
-                                    New user?&nbsp;
-                                    <Link to='/auth/register'>Create an account</Link>
-                                </Text>
-                            </Col>
-                        </Row>
-                    )
+                    !credential && registrationLink
                 }
                 {
                     renderResetPassword && forgotPasswordLink
